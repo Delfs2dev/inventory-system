@@ -1,37 +1,32 @@
-# Base PHP image with Apache
-FROM php:8.2-apache
+# Base image
+FROM php:8.2-cli
 
-# Install system dependencies and PostgreSQL driver
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libpq-dev \
     unzip \
     git \
-    && docker-php-ext-install pdo pdo_pgsql
+    curl \
+    libpq-dev \
+    libzip-dev \
+    && docker-php-ext-install pdo pdo_pgsql zip
 
-# Enable Apache rewrite module for Laravel
-RUN a2enmod rewrite
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy Composer binary from official Composer image
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-# Copy application files
+# Copy all files
 COPY . .
 
-# Install PHP dependencies (optimize for production)
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Cache Laravel config & routes
-RUN php artisan config:cache \
-    && php artisan route:cache
+# Laravel optimization
+RUN php artisan config:clear && php artisan route:clear && php artisan cache:clear
 
-# Run database migrations automatically (safe for production)
-RUN php artisan migrate --force || true
-
-# Expose port 8000 (Render expects apps to bind here)
+# Expose port
 EXPOSE 8000
 
-# Start Apache server
-CMD ["apache2-foreground"]
+# Run Laravel server
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
