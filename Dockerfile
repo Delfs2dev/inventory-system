@@ -1,32 +1,37 @@
-# Gamitin ang official PHP image
-FROM php:8.2-fpm
+# Base PHP image with Apache
+FROM php:8.2-apache
 
-# Install system dependencies
+# Install system dependencies and PostgreSQL driver
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    zip \
+    libpq-dev \
     unzip \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_mysql
+    git \
+    && docker-php-ext-install pdo pdo_pgsql
 
-# Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Enable Apache rewrite module for Laravel
+RUN a2enmod rewrite
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy project files
+# Copy Composer binary from official Composer image
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Copy application files
 COPY . .
 
-# Install PHP dependencies
+# Install PHP dependencies (optimize for production)
 RUN composer install --no-dev --optimize-autoloader
 
-# Expose port
+# Cache Laravel config & routes
+RUN php artisan config:cache \
+    && php artisan route:cache
+
+# Run database migrations automatically (safe for production)
+RUN php artisan migrate --force || true
+
+# Expose port 8000 (Render expects apps to bind here)
 EXPOSE 8000
 
-# Start Laravel using Artisan serve
-CMD php artisan serve --host=0.0.0.0 --port=8000
+# Start Apache server
+CMD ["apache2-foreground"]
