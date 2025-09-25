@@ -28,5 +28,5 @@ RUN php artisan config:clear && php artisan route:clear && php artisan cache:cle
 # Expose port
 EXPOSE 8000
 
-# Run Laravel server
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Run migrations then start Laravel server
+CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
