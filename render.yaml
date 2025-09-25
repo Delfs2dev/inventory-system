@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: inventory-system
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        sync: false
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://inventory-system.onrender.com
+      - key: DB_CONNECTION
+        value: postgres
+      - key: DB_HOST
+        fromDatabase:
+          name: inventory-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: inventory-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: inventory-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: inventory-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: inventory-db
+          property: password
+
+databases:
+  - name: inventory-db
+    plan: free
